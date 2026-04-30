@@ -64,7 +64,6 @@ Open your MariaDB client (e.g. via terminal or DBeaver) and run the full setup s
 
 ```bash
 mariadb -u your_user -p < sql/setup.sql
-mariadb -u your_user -p < sql/dummy_data.sql
 ```
 
 This will:
@@ -85,9 +84,9 @@ DB_NAME=project
 
 > **Important:** Never share or commit your `.env` file. It is specific to your local machine.
 
-### 4. (Optional) Load sample data
+### 4. Load sample data
 
-If a `dummy_data.sql` file is available, you can load it to populate the database with test records:
+There's a provided `dummy_data.sql` file is available, you can load it to populate the database with test records:
 
 ```bash
 mariadb -u your_user -p project < sql/dummy_data.sql
@@ -98,10 +97,6 @@ mariadb -u your_user -p project < sql/dummy_data.sql
 ```bash
 python main.py
 ```
-
----
-
-
 
 ---
 
