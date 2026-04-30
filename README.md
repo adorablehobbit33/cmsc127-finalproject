@@ -11,9 +11,8 @@ This project was built for **CMSC 127 – File Processing and Database Systems**
 1. [Project Overview](#project-overview)
 2. [Requirements](#requirements)
 3. [Setup Instructions](#setup-instructions)
-4. [File Structure](#file-structure)
-5. [How to Use](#how-to-use)
-6. [Reports Reference](#reports-reference)
+4. [How to Use](#how-to-use)
+5. [Reports Reference](#reports-reference)
 
 ---
 
