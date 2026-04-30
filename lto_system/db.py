@@ -1,11 +1,16 @@
+import os
+from dotenv import load_dotenv
 import mysql.connector
+
+# Load environment variables
+load_dotenv()
 
 def get_connection():
     return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="",
-        database="project"
+        host=os.getenv("DB_HOST"),
+        user=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASSWORD"),
+        database=os.getenv("DB_NAME")
     )
 
 def execute_query(query, params=None):
@@ -14,7 +19,7 @@ def execute_query(query, params=None):
     try:
         cursor.execute(query, params or ())
         conn.commit()
-        return True, "Success"
+        return True, cursor.rowcount
     except mysql.connector.Error as e:
         conn.rollback()
         return False, str(e)

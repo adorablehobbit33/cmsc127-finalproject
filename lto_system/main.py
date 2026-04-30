@@ -2,7 +2,7 @@ from menus.driver_menu import driver_menu
 from menus.vehicle_menu import vehicle_menu
 from menus.registration_menu import registration_menu
 from menus.violation_menu import violation_menu
-# from reports.reports_menu import reports_menu
+from reports.reports_menu import reports_menu
 
 def main_menu():
     while True:
@@ -27,8 +27,8 @@ def main_menu():
             registration_menu()
         elif choice == "4":
             violation_menu()
-        # elif choice == "5":
-        #     reports_menu()
+        elif choice == "5":
+            reports_menu()
         elif choice == "0":
             print("\nGoodbye!\n")
             break
