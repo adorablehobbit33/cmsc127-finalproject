@@ -7,6 +7,7 @@ def violation_menu():
         print("2. Update Violation")
         print("3. Delete Violation")
         print("4. Search Violation")
+        print("5. Print All Violations")
         print("0. Back")
 
         choice = input("Enter choice: ").strip()
@@ -19,6 +20,8 @@ def violation_menu():
             delete_violation()
         elif choice == "4":
             search_violation()
+        elif choice == "5":
+            print_all_violations()
         elif choice == "0":
             break
         else:
@@ -149,3 +152,33 @@ def search_violation():
     for r in rows:
         date = f"{r['month']} {r['day']}, {r['year']}"
         print(f"{r['violation_id']:<15} {r['license_number']:<15} {r['driver_name']:<25} {date:<20} {str(r['total_fine_amount']):<10} {r['ticket_status']:<12}")
+
+def print_all_violations():
+    print("\n-- Incident Violation Tickets Records --")
+    query = """
+    SELECT vt.violation_id, 
+           vt.license_number,
+           CONCAT(d.first_name, ' ', d.last_name) AS driver_name,
+           vtht.violation_type AS violation_name,
+           vt.month, 
+           vt.day, 
+           vt.year,
+           vt.total_fine_amount, 
+           vt.ticket_status
+    FROM violation_ticket vt
+    JOIN driver d ON vt.license_number = d.license_number
+    JOIN violation_ticket_has_type vtht ON vt.violation_id = vtht.violation_id
+    ORDER BY vt.year DESC, vt.month DESC, vt.day DESC
+"""
+    rows = fetch_all(query)
+
+    if not rows:
+        print("[!] No violation records found.")
+        return
+
+    print(f"\n{'Violation ID':<15} {'Violation Type':<20} {'License No.':<15} {'Driver Name':<25} {'Date':<15} {'Fine':<10} {'Status':<10}")
+    print("-" * 115)
+    for r in rows:
+        date_str = f"{r['month']} {r['day']}, {r['year']}"
+        fine_str = f"PHP {r['total_fine_amount']:.2f}"
+        print(f"{r['violation_id']:<15} {r['violation_name']:<20} {r['license_number']:<15} {r['driver_name']:<25} {date_str:<15} {fine_str:<10} {r['ticket_status']:<10}")

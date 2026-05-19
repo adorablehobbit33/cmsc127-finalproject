@@ -7,6 +7,7 @@ def vehicle_menu():
         print("2. Update Vehicle")
         print("3. Delete Vehicle")
         print("4. Search Vehicle")
+        print("5. Print All Vehicles")
         print("0. Back")
 
         choice = input("Enter choice: ").strip()
@@ -19,6 +20,8 @@ def vehicle_menu():
             delete_vehicle()
         elif choice == "4":
             search_vehicle()
+        elif choice == "5":
+            print_all_vehicles()
         elif choice == "0":
             break
         else:
@@ -127,3 +130,25 @@ def search_vehicle():
     print("-" * 100)
     for r in rows:
         print(f"{r['plate_number']:<10} {r['make']:<12} {r['model']:<12} {str(r['year']):<6} {r['color']:<12} {r['vehicle_type']:<20} {r['owner_name']:<25}")
+    
+def print_all_vehicles():
+    print("\n-- All Registered Vehicles --")
+    query = """
+        SELECT v.plate_number, v.make, v.model, v.year, v.color, v.vehicle_type,
+            CONCAT(d.first_name, ' ', d.last_name) AS owner_name
+        FROM vehicle v
+        LEFT JOIN driver d ON v.license_number = d.license_number
+        ORDER BY v.plate_number
+    """
+    rows = fetch_all(query)
+
+    if not rows:
+        print("[!] No vehicles registered in the system.")
+        return
+
+    print(f"\n{'Plate No.':<12} {'Make/Model':<20} {'Year':<6} {'Color':<10} {'Type':<15} {'Owner':<20}")
+    print("-" * 100)
+    for r in rows:
+        make_model = f"{r['make']} {r['model']}"
+        owner = r['owner_name'] if r['owner_name'] else "Unassigned"
+        print(f"{r['plate_number']:<12} {make_model:<20} {r['year']:<6} {r['color']:<10} {r['vehicle_type']:<15} {owner:<20}")
