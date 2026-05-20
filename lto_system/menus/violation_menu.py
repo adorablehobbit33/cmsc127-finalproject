@@ -1,3 +1,5 @@
+import datetime
+
 from db import execute_query, fetch_all
 
 def violation_menu():
@@ -29,18 +31,110 @@ def violation_menu():
 
 def add_violation():
     print("\n-- Add Violation --")
-    violation_id = input("Violation ID: ").strip()
-    license_number = input("Driver License Number: ").strip()
-    plate_number = input("Plate Number: ").strip()
-    chassis_number = input("Chassis Number: ").strip()
-    engine_number = input("Engine Number: ").strip()
-    violation_date = input("Date of Violation (YYYY-MM-DD): ").strip()
-    time = input("Time (HH:MM:SS): ").strip()
-    total_fine = input("Total Fine Amount: ").strip()
-    officer = input("Apprehending Officer (leave blank if none): ").strip() or "Unknown"
-    ticket_status = input("Ticket Status (unpaid/paid/contested): ").strip()
-    violation_type = input("Violation Type (e.g. overspeeding, reckless driving): ").strip()
+    while True:
+        violation_id = input("Violation ID: ").strip()
+        if len(violation_id) == 0:
+            print("[!] Error: Violation ID cannot be empty.")
+        elif len(violation_id) > 10:
+            print(f"[!] Error: ID too long ({len(violation_id)} chars). Max allowed is 10.")
+        else:
+            break
 
+    while True:
+        license_number = input("Driver License Number: ").strip()
+        if len(license_number) == 0:
+            print("[!] Error: Driver License Number cannot be empty.")
+        elif len(license_number) > 13:
+            print(f"[!] Error: License too long ({len(license_number)} chars). Max allowed is 13.")
+        else:
+            break
+
+    while True:
+        plate_number = input("Plate Number: ").strip()
+        if len(plate_number) == 0:
+            print("[!] Error: Plate number cannot be empty.")
+        elif len(plate_number) > 7:
+            print(f"[!] Error: Plate number too long ({len(plate_number)} chars). Max allowed is 7.")
+        else:
+            break
+    while True:
+        chassis_number = input("Chassis Number: ").strip()
+        if len(chassis_number) == 0:
+            print("[!] Error: Chassis number cannot be empty.")
+        elif len(chassis_number) > 17:
+            print(f"[!] Error: Chassis number too long ({len(chassis_number)} chars). Max allowed is 17.")
+        else:
+            break
+
+    while True:
+        engine_number = input("Engine Number: ").strip()
+        if len(engine_number) == 0:
+            print("[!] Error: Engine number cannot be empty.")
+        elif len(engine_number) > 17:
+            print(f"[!] Error: Engine number too long ({len(engine_number)} chars). Max allowed is 17.")
+        else:
+            break
+
+    while True:
+        violation_date = input("Date of Violation (YYYY-MM-DD): ").strip()
+        if len(violation_date) != 10 or violation_date[4] != '-' or violation_date[7] != '-':
+            print("[!] Error: Invalid format. Please write exactly as YYYY-MM-DD.")
+            continue
+        try:
+            parsed_date = datetime.strptime(violation_date, "%Y-%m-%d")
+            if parsed_date > datetime.now():
+                print("[!] Error: Violation incident date cannot be set in the future.")
+                continue
+            break
+        except ValueError:
+            print("[!] Error: Not a valid calendar date. Please check your parameters.")
+            
+    while True:
+        time = input("Time (HH:MM:SS): ").strip()
+        try:
+            datetime.strptime(time, "%H:%M:%S")
+            break
+        except ValueError:
+            print("[!] Error: Invalid time format. Please write exactly as HH:MM:SS.")
+
+    while True:
+        total_fine_input = input("Total Fine Amount (PHP): ").strip()
+        if len(total_fine_input) == 0:
+            print("[!] Error: Fine amount cannot be empty.")
+            continue
+        try:
+            total_fine = float(total_fine_input)
+            if total_fine < 0:
+                print("[!] Error: Fine amount cannot be negative.")
+                continue
+            break
+        except ValueError:
+            print("[!] Error: Please enter a valid numerical decimal value.")
+
+    while True:
+        officer = input("Apprehending Officer (leave blank if none): ").strip() or "Unknown"
+        if len(officer) > 50:
+            print(f"[!] Error: Name too long ({len(officer)} chars). Max allowed is 50.")
+        else:
+            break
+
+    allowed_statuses = ["unpaid", "paid", "contested"]
+    while True:
+        ticket_status = input("Ticket Status (unpaid/paid/contested): ").strip().lower()
+        if ticket_status not in allowed_statuses:
+            print(f"[!] Error: Choose status exactly from: {', '.join(allowed_statuses)}")
+        else:
+            break
+
+    while True:
+        violation_type = input("Violation Classification Type (e.g. overspeeding): ").strip()
+        if len(violation_type) == 0:
+            print("[!] Error: Violation classification type cannot be empty.")
+        elif len(violation_type) > 50:
+            print(f"[!] Error: Type too long ({len(violation_type)} chars). Max allowed by bridge is 50.")
+        else:
+            break
+        
     parts = violation_date.split("-")
     year = parts[0]
     month_num = int(parts[1])
@@ -78,7 +172,12 @@ def add_violation():
 
 def update_violation():
     print("\n-- Update Violation --")
-    violation_id = input("Enter Violation ID to update: ").strip()
+    while True:
+        violation_id = input("Enter Violation ID to update: ").strip()
+        if len(violation_id) == 0:
+            print("[!] Error: Violation ID search field cannot be empty.")
+        else:
+            break
 
     rows = fetch_all("SELECT * FROM violation_ticket WHERE violation_id = %s", (violation_id,))
     if not rows:
@@ -89,8 +188,28 @@ def update_violation():
     print(f"\nCurrent info: {v['violation_id']} | {v['ticket_status']} | Fine: {v['total_fine_amount']}")
     print("(Press Enter to keep current value)\n")
 
-    ticket_status = input(f"Ticket Status [{v['ticket_status']}]: ").strip() or v['ticket_status']
-    total_fine = input(f"Total Fine [{v['total_fine_amount']}]: ").strip() or v['total_fine_amount']
+    allowed_statuses = ["unpaid", "paid", "contested"]
+    while True:
+        status_input = input(f"Ticket Status [{v['ticket_status']}]: ").strip().lower()
+        ticket_status = status_input if status_input else v['ticket_status']
+        if ticket_status not in allowed_statuses:
+            print(f"[!] Error: Choose status exactly from: {', '.join(allowed_statuses)}")
+        else:
+            break
+        
+    while True:
+        total_fine_input = input(f"Total Fine [{v['total_fine_amount']}]: ").strip() or v['total_fine_amount']
+        if len(total_fine_input) == 0:
+            print("[!] Error: Fine amount cannot be empty.")
+            continue
+        try:
+            total_fine = float(total_fine_input)
+            if total_fine < 0:
+                print("[!] Error: Fine amount cannot be negative.")
+                continue
+            break
+        except ValueError:
+            print("[!] Error: Please enter a valid numerical decimal value.")
 
     query = """
         UPDATE violation_ticket
@@ -106,7 +225,12 @@ def update_violation():
 
 def delete_violation():
     print("\n-- Delete Violation --")
-    violation_id = input("Enter Violation ID to delete: ").strip()
+    while True:
+        violation_id = input("Enter Violation ID to delete: ").strip()
+        if len(violation_id) == 0:
+            print("[!] Error: Violation ID cannot be empty.")
+        else:
+            break
 
     rows = fetch_all("SELECT * FROM violation_ticket WHERE violation_id = %s", (violation_id,))
     if not rows:
@@ -128,7 +252,12 @@ def delete_violation():
 
 def search_violation():
     print("\n-- Search Violation --")
-    keyword = input("Enter violation ID or license number to search: ").strip()
+    while True:
+        keyword = input("Enter violation ID or driver license key to search: ").strip()
+        if not keyword:
+            print("[!] Error: Search criteria arguments cannot be blank spaces.")
+            continue
+        break
     like = f"%{keyword}%"
 
     query = """

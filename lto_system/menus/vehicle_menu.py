@@ -174,10 +174,38 @@ def update_vehicle():
     print(f"\nCurrent info: {v['make']} {v['model']} {v['year']} | {v['color']} | {v['vehicle_type']}")
     print("(Press Enter to keep current value)\n")
 
-    color = input(f"Color [{v['color']}]: ").strip() or v['color']
-    vehicle_type = input(f"Vehicle Type [{v['vehicle_type']}]: ").strip() or v['vehicle_type']
-    ownership = input(f"Ownership [{v['ownership']}]: ").strip() or v['ownership']
+    while True:
+        color_input = input(f"Color [{v['color']}]: ").strip()
+        color = color_input if color_input else v['color']
+        if len(color) == 0:
+            print("[!] Error: Color cannot be left completely empty.")
+        elif len(color) > 50:
+            print(f"[!] Error: Color input too long ({len(color)} chars). Max allowed is 50.")
+        else:
+            break
 
+    allowed_types = ["motorcycle", "private", "public"]
+    while True:
+        type_input = input(f"Vehicle Type [{v['vehicle_type']}]: ").strip().lower()
+        vehicle_type = type_input if type_input else v['vehicle_type']
+        if vehicle_type not in allowed_types:
+            print(f"[!] Error: Choice must be exactly one of: {', '.join(allowed_types)}")
+        else:
+            break
+        
+    while True:
+        ownership_input = input(f"Ownership [{v['ownership'] if v['ownership'] else 'None'}]: ").strip()
+        
+        if ownership_input.lower() == "none":
+            ownership = None
+            break
+
+        ownership = ownership_input if ownership_input else v['ownership']
+        if ownership and len(ownership) > 50:
+            print(f"[!] Error: Ownership string too long ({len(ownership)} chars). Max allowed is 50.")
+        else:
+            break
+        
     query = """
         UPDATE vehicle
         SET color = %s, vehicle_type = %s, ownership = %s
