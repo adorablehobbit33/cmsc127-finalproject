@@ -187,7 +187,7 @@ def report_expired_registrations():
         JOIN vehicle v ON vr.plate_number = v.plate_number
         JOIN driver  d ON vr.license_number = d.license_number
         WHERE DATE_ADD(vr.registration_date, INTERVAL 1 YEAR) < %s
-           OR vr.registration_status = 'expired'
+           AND vr.registration_status = 'expired'
         ORDER BY expiration_date
     """
     rows = fetch_all(query, (as_of_date,))
