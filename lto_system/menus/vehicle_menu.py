@@ -205,7 +205,7 @@ def update_vehicle():
             print(f"[!] Error: Ownership string too long ({len(ownership)} chars). Max allowed is 50.")
         else:
             break
-        
+
     query = """
         UPDATE vehicle
         SET color = %s, vehicle_type = %s, ownership = %s
@@ -258,9 +258,9 @@ def search_vehicle():
 
     query = """
         SELECT v.plate_number, v.make, v.model, v.year, v.color, v.vehicle_type,
-               CONCAT(d.first_name, ' ', d.last_name) AS owner_name
+               COALESCE(CONCAT(d.first_name,' ',d.last_name), 'Unassigned') AS owner_name
         FROM vehicle v
-        JOIN driver d ON v.license_number = d.license_number
+        LEFT JOIN driver d ON v.license_number = d.license_number
         WHERE v.plate_number LIKE %s
            OR v.make LIKE %s
            OR v.model LIKE %s

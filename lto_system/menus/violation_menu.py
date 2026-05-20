@@ -59,18 +59,14 @@ def add_violation():
             break
     while True:
         chassis_number = input("Chassis Number: ").strip()
-        if len(chassis_number) == 0:
-            print("[!] Error: Chassis number cannot be empty.")
-        elif len(chassis_number) > 17:
+        if len(chassis_number) > 17:
             print(f"[!] Error: Chassis number too long ({len(chassis_number)} chars). Max allowed is 17.")
         else:
             break
 
     while True:
         engine_number = input("Engine Number: ").strip()
-        if len(engine_number) == 0:
-            print("[!] Error: Engine number cannot be empty.")
-        elif len(engine_number) > 17:
+        if len(engine_number) > 17:
             print(f"[!] Error: Engine number too long ({len(engine_number)} chars). Max allowed is 17.")
         else:
             break
