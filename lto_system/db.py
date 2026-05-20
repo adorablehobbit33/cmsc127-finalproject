@@ -14,11 +14,9 @@ def get_connection():
     )
 
 def execute_query(query, params=None):
-    conn = None
-    cursor = None
+    conn = get_connection()
+    cursor = conn.cursor()
     try:
-        conn = get_connection()
-        cursor = conn.cursor()
         cursor.execute(query, params or ())
         conn.commit()
         return True, cursor.rowcount
@@ -26,24 +24,18 @@ def execute_query(query, params=None):
         conn.rollback()
         return False, str(e)
     finally:
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.close()
+        cursor.close()
+        conn.close()
 
 def fetch_all(query, params=None):
-    conn = None
-    cursor = None
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
     try:
-        conn = get_connection()
-        cursor = conn.cursor(dictionary=True)
         cursor.execute(query, params or ())
         return cursor.fetchall()
     except mysql.connector.Error as e:
         print(f"[ERROR] {e}")
         return []
     finally:
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.close()
+        cursor.close()
+        conn.close()
