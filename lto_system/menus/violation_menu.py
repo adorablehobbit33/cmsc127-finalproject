@@ -1,18 +1,25 @@
-import datetime
-
+from colorama import Fore, Style
 from db import execute_query, fetch_all
+from utils.design import (
+    print_header, print_success, print_error, print_info, print_warning,
+    print_table, print_divider, print_subheader, input_required,
+    input_option, input_date, input_license_number, input_plate_number
+)
 
 def violation_menu():
     while True:
-        print("\n--- Violation Management ---")
-        print("1. Add Violation")
-        print("2. Update Violation")
-        print("3. Delete Violation")
-        print("4. Search Violation")
-        print("5. Print All Violations")
-        print("0. Back")
-
-        choice = input("Enter choice: ").strip()
+        print_header("VIOLATION MANAGEMENT")
+        print(Fore.WHITE + """
+  ┌────────────────────────────────────────────────────┐
+  │  1. Add Violation                                  │
+  │  2. Update Violation                               │
+  │  3. Delete Violation                               │
+  │  4. Search Violation                               │
+  │  0. Back to Main Menu                              │
+  └────────────────────────────────────────────────────┘
+        """)
+        
+        choice = input(f"{Fore.YELLOW}Enter choice:{Style.RESET_ALL} ").strip()
 
         if choice == "1":
             add_violation()
@@ -22,137 +29,92 @@ def violation_menu():
             delete_violation()
         elif choice == "4":
             search_violation()
-        elif choice == "5":
-            print_all_violations()
         elif choice == "0":
             break
         else:
-            print("[!] Invalid choice.")
+            print_error("Invalid choice.")
+            input("Press Enter to continue...")
 
 def add_violation():
-    print("\n-- Add Violation --")
+    print_subheader("ADD NEW VIOLATION")
+    
+    violation_id = input_required("Violation ID: ", "Violation ID")
+    
+    # Check if violation already exists
+    existing = fetch_all("SELECT violation_id FROM violation_ticket WHERE violation_id = %s", (violation_id,))
+    if existing:
+        print_error(f"Violation ID {violation_id} already exists!")
+        input("Press Enter to continue...")
+        return
+    
+    # Verify driver exists
+    print_info("Verifying driver...")
+    license_number = input_license_number()
+    driver_check = fetch_all("SELECT * FROM driver WHERE license_number = %s", (license_number,))
+    if not driver_check:
+        print_error(f"Driver with license number {license_number} does not exist.")
+        input("Press Enter to continue...")
+        return
+    
+    # Verify vehicle exists
+    print_info("Verifying vehicle...")
+    plate_number = input_plate_number()
+    vehicle_check = fetch_all("SELECT * FROM vehicle WHERE plate_number = %s", (plate_number,))
+    if not vehicle_check:
+        print_error(f"Vehicle with plate number {plate_number} does not exist.")
+        input("Press Enter to continue...")
+        return
+    
+    chassis_number = input_required("Chassis Number: ", "Chassis number") or "N/A"
+    engine_number = input_required("Engine Number: ", "Engine number") or "N/A"
+    
+    violation_date = input_date("Date of Violation (YYYY-MM-DD): ")
+    
+    # Time validation
+    import re
     while True:
-        violation_id = input("Violation ID: ").strip()
-        if len(violation_id) == 0:
-            print("[!] Error: Violation ID cannot be empty.")
-        elif len(violation_id) > 10:
-            print(f"[!] Error: ID too long ({len(violation_id)} chars). Max allowed is 10.")
-        else:
+        time = input(f"{Fore.CYAN}Time (HH:MM:SS):{Style.RESET_ALL} ").strip()
+        if re.match(r'^\d{2}:\d{2}:\d{2}$', time):
             break
+        print_error("Invalid time format. Please use HH:MM:SS (e.g., 14:30:00)")
+    
+    # Fine amount validation
+    while True:
+        total_fine = input(f"{Fore.CYAN}Total Fine Amount:{Style.RESET_ALL} ").strip()
+        if total_fine and total_fine.replace('.', '').isdigit():
+            total_fine = float(total_fine)
+            break
+        print_error("Please enter a valid number for fine amount")
+    
+    officer = input(f"{Fore.CYAN}Apprehending Officer (leave blank if none):{Style.RESET_ALL} ").strip() or "Unknown"
+    ticket_status = input_option("Ticket Status:", ["unpaid", "paid", "contested"])
+    
+    print_info("Enter violation type (e.g., overspeeding, reckless driving, illegal parking, no seatbelt)")
+    violation_type = input_required("Violation Type: ", "Violation type")
 
-    while True:
-        license_number = input("Driver License Number: ").strip()
-        if len(license_number) == 0:
-            print("[!] Error: Driver License Number cannot be empty.")
-        elif len(license_number) > 13:
-            print(f"[!] Error: License too long ({len(license_number)} chars). Max allowed is 13.")
-        else:
-            break
-
-    while True:
-        plate_number = input("Plate Number: ").strip()
-        if len(plate_number) == 0:
-            print("[!] Error: Plate number cannot be empty.")
-        elif len(plate_number) > 7:
-            print(f"[!] Error: Plate number too long ({len(plate_number)} chars). Max allowed is 7.")
-        else:
-            break
-    while True:
-        chassis_number = input("Chassis Number: ").strip()
-        if len(chassis_number) > 17:
-            print(f"[!] Error: Chassis number too long ({len(chassis_number)} chars). Max allowed is 17.")
-        else:
-            break
-
-    while True:
-        engine_number = input("Engine Number: ").strip()
-        if len(engine_number) > 17:
-            print(f"[!] Error: Engine number too long ({len(engine_number)} chars). Max allowed is 17.")
-        else:
-            break
-
-    while True:
-        violation_date = input("Date of Violation (YYYY-MM-DD): ").strip()
-        if len(violation_date) != 10 or violation_date[4] != '-' or violation_date[7] != '-':
-            print("[!] Error: Invalid format. Please write exactly as YYYY-MM-DD.")
-            continue
-        try:
-            parsed_date = datetime.strptime(violation_date, "%Y-%m-%d")
-            if parsed_date > datetime.now():
-                print("[!] Error: Violation incident date cannot be set in the future.")
-                continue
-            break
-        except ValueError:
-            print("[!] Error: Not a valid calendar date. Please check your parameters.")
-            
-    while True:
-        time = input("Time (HH:MM:SS): ").strip()
-        try:
-            datetime.strptime(time, "%H:%M:%S")
-            break
-        except ValueError:
-            print("[!] Error: Invalid time format. Please write exactly as HH:MM:SS.")
-
-    while True:
-        total_fine_input = input("Total Fine Amount (PHP): ").strip()
-        if len(total_fine_input) == 0:
-            print("[!] Error: Fine amount cannot be empty.")
-            continue
-        try:
-            total_fine = float(total_fine_input)
-            if total_fine < 0:
-                print("[!] Error: Fine amount cannot be negative.")
-                continue
-            break
-        except ValueError:
-            print("[!] Error: Please enter a valid numerical decimal value.")
-
-    while True:
-        officer = input("Apprehending Officer (leave blank if none): ").strip() or "Unknown"
-        if len(officer) > 50:
-            print(f"[!] Error: Name too long ({len(officer)} chars). Max allowed is 50.")
-        else:
-            break
-
-    allowed_statuses = ["unpaid", "paid", "contested"]
-    while True:
-        ticket_status = input("Ticket Status (unpaid/paid/contested): ").strip().lower()
-        if ticket_status not in allowed_statuses:
-            print(f"[!] Error: Choose status exactly from: {', '.join(allowed_statuses)}")
-        else:
-            break
-
-    while True:
-        violation_type = input("Violation Classification Type (e.g. overspeeding): ").strip()
-        if len(violation_type) == 0:
-            print("[!] Error: Violation classification type cannot be empty.")
-        elif len(violation_type) > 50:
-            print(f"[!] Error: Type too long ({len(violation_type)} chars). Max allowed by bridge is 50.")
-        else:
-            break
-        
     parts = violation_date.split("-")
     year = parts[0]
     month_num = int(parts[1])
     day = parts[2]
-    months = ["January","February","March","April","May","June",
-              "July","August","September","October","November","December"]
+    months = ["January", "February", "March", "April", "May", "June",
+              "July", "August", "September", "October", "November", "December"]
     month = months[month_num - 1]
 
     query = """
         INSERT INTO violation_ticket (violation_id, time, total_fine_amount, month, day, year,
             apprehending_officer, ticket_status, license_number, plate_number,
-            chassis_number, engine_number)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            chassis_number, engine_number, location)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     """
     success, msg = execute_query(query, (
         violation_id, time, total_fine, month, day, year,
         officer, ticket_status, license_number, plate_number,
-        chassis_number, engine_number
+        chassis_number, engine_number, driver_check[0]['address']
     ))
 
     if not success:
-        print(f"[✗] Failed to add violation ticket: {msg}")
+        print_error(f"Failed to add violation ticket: {msg}")
+        input("Press Enter to continue...")
         return
 
     query2 = """
@@ -162,50 +124,46 @@ def add_violation():
     success2, msg2 = execute_query(query2, (violation_id, violation_type))
 
     if success2:
-        print("[✓] Violation added successfully.")
+        driver_name = f"{driver_check[0]['first_name']} {driver_check[0]['last_name']}"
+        print_success(f"Violation {violation_id} added successfully!")
+        print_info(f"Driver: {driver_name} | Vehicle: {plate_number} | Fine: ₱{total_fine:,.2f}")
+        print_info(f"Status: {ticket_status} | Type: {violation_type}")
     else:
-        print(f"[✗] Ticket added but failed to set type: {msg2}")
+        print_error(f"Ticket added but failed to set type: {msg2}")
+    
+    input("\nPress Enter to continue...")
 
 def update_violation():
-    print("\n-- Update Violation --")
-    while True:
-        violation_id = input("Enter Violation ID to update: ").strip()
-        if len(violation_id) == 0:
-            print("[!] Error: Violation ID search field cannot be empty.")
-        else:
-            break
+    print_subheader("UPDATE VIOLATION")
+    violation_id = input_required("Violation ID to update: ", "Violation ID")
 
     rows = fetch_all("SELECT * FROM violation_ticket WHERE violation_id = %s", (violation_id,))
     if not rows:
-        print("[!] Violation not found.")
+        print_error("Violation not found.")
+        input("Press Enter to continue...")
         return
 
     v = rows[0]
-    print(f"\nCurrent info: {v['violation_id']} | {v['ticket_status']} | Fine: {v['total_fine_amount']}")
-    print("(Press Enter to keep current value)\n")
+    print_info(f"Current info: ID: {v['violation_id']} | Status: {v['ticket_status']} | Fine: ₱{v['total_fine_amount']}")
+    print_info("(Press Enter to keep current value)\n")
 
-    allowed_statuses = ["unpaid", "paid", "contested"]
-    while True:
-        status_input = input(f"Ticket Status [{v['ticket_status']}]: ").strip().lower()
-        ticket_status = status_input if status_input else v['ticket_status']
-        if ticket_status not in allowed_statuses:
-            print(f"[!] Error: Choose status exactly from: {', '.join(allowed_statuses)}")
+    ticket_status = input(f"{Fore.CYAN}Ticket Status [{v['ticket_status']}]:{Style.RESET_ALL} ").strip() or v['ticket_status']
+    
+    # Validate status
+    if ticket_status not in ["unpaid", "paid", "contested"]:
+        print_error("Invalid status. Must be unpaid, paid, or contested")
+        input("Press Enter to continue...")
+        return
+    
+    fine_input = input(f"{Fore.CYAN}Total Fine Amount [{v['total_fine_amount']}]:{Style.RESET_ALL} ").strip()
+    if fine_input:
+        if fine_input.replace('.', '').isdigit():
+            total_fine = float(fine_input)
         else:
-            break
-        
-    while True:
-        total_fine_input = input(f"Total Fine [{v['total_fine_amount']}]: ").strip() or v['total_fine_amount']
-        if len(total_fine_input) == 0:
-            print("[!] Error: Fine amount cannot be empty.")
-            continue
-        try:
-            total_fine = float(total_fine_input)
-            if total_fine < 0:
-                print("[!] Error: Fine amount cannot be negative.")
-                continue
-            break
-        except ValueError:
-            print("[!] Error: Please enter a valid numerical decimal value.")
+            print_error("Invalid fine amount. Keeping current value.")
+            total_fine = v['total_fine_amount']
+    else:
+        total_fine = v['total_fine_amount']
 
     query = """
         UPDATE violation_ticket
@@ -215,95 +173,109 @@ def update_violation():
     success, msg = execute_query(query, (ticket_status, total_fine, violation_id))
 
     if success:
-        print("[✓] Violation updated successfully.")
+        print_success(f"Violation {violation_id} updated successfully!")
+        print_info(f"New status: {ticket_status} | New fine: ₱{total_fine:,.2f}")
     else:
-        print(f"[✗] Failed: {msg}")
+        print_error(f"Failed: {msg}")
+    
+    input("\nPress Enter to continue...")
 
 def delete_violation():
-    print("\n-- Delete Violation --")
-    while True:
-        violation_id = input("Enter Violation ID to delete: ").strip()
-        if len(violation_id) == 0:
-            print("[!] Error: Violation ID cannot be empty.")
-        else:
-            break
+    print_subheader("DELETE VIOLATION")
+    violation_id = input_required("Violation ID to delete: ", "Violation ID")
 
-    rows = fetch_all("SELECT * FROM violation_ticket WHERE violation_id = %s", (violation_id,))
+    rows = fetch_all("""
+        SELECT vt.*, vth.violation_type 
+        FROM violation_ticket vt
+        LEFT JOIN violation_ticket_has_type vth ON vt.violation_id = vth.violation_id
+        WHERE vt.violation_id = %s
+    """, (violation_id,))
+    
     if not rows:
-        print("[!] Violation not found.")
+        print_error("Violation not found.")
+        input("Press Enter to continue...")
         return
 
-    confirm = input(f"Delete violation {violation_id}? (yes/no): ").strip().lower()
-    if confirm != "yes":
-        print("[!] Cancelled.")
+    v = rows[0]
+    print_warning(f"⚠️  You are about to delete violation: {violation_id}")
+    print_info(f"Driver: {v['license_number']} | Fine: ₱{v['total_fine_amount']} | Status: {v['ticket_status']}")
+    if v.get('violation_type'):
+        print_info(f"Type: {v['violation_type']}")
+    
+    confirm = input(f"{Fore.RED}Type 'DELETE' to confirm:{Style.RESET_ALL} ").strip()
+    if confirm != "DELETE":
+        print_warning("Cancelled.")
+        input("Press Enter to continue...")
         return
 
+    # Delete violation type first (foreign key)
     execute_query("DELETE FROM violation_ticket_has_type WHERE violation_id = %s", (violation_id,))
     success, msg = execute_query("DELETE FROM violation_ticket WHERE violation_id = %s", (violation_id,))
 
     if success:
-        print("[✓] Violation deleted successfully.")
+        print_success(f"Violation {violation_id} deleted successfully.")
     else:
-        print(f"[✗] Failed: {msg}")
+        print_error(f"Failed: {msg}")
+    
+    input("\nPress Enter to continue...")
 
 def search_violation():
-    print("\n-- Search Violation --")
-    while True:
-        keyword = input("Enter violation ID or driver license key to search: ").strip()
-        if not keyword:
-            print("[!] Error: Search criteria arguments cannot be blank spaces.")
-            continue
-        break
+    print_subheader("SEARCH VIOLATION")
+    print_info("Search by violation ID or license number (partial matches allowed)")
+    
+    keyword = input(f"{Fore.CYAN}Enter violation ID or license number to search:{Style.RESET_ALL} ").strip()
+    
+    if not keyword:
+        print_warning("Please enter a search term")
+        input("Press Enter to continue...")
+        return
+    
     like = f"%{keyword}%"
 
     query = """
         SELECT vt.violation_id, vt.license_number,
                CONCAT(d.first_name, ' ', d.last_name) AS driver_name,
                vt.month, vt.day, vt.year,
-               vt.total_fine_amount, vt.ticket_status
+               vt.time, vt.total_fine_amount, vt.ticket_status,
+               vth.violation_type, vt.apprehending_officer
         FROM violation_ticket vt
         JOIN driver d ON vt.license_number = d.license_number
+        LEFT JOIN violation_ticket_has_type vth ON vt.violation_id = vth.violation_id
         WHERE vt.violation_id LIKE %s
            OR vt.license_number LIKE %s
+        ORDER BY vt.year DESC, vt.month DESC, vt.day DESC
     """
     rows = fetch_all(query, (like, like))
 
     if not rows:
-        print("[!] No violations found.")
+        print_warning(f"No violations found matching '{keyword}'")
+        input("Press Enter to continue...")
         return
 
-    print(f"\n{'Violation ID':<15} {'License No.':<15} {'Driver':<25} {'Date':<20} {'Fine':<10} {'Status':<12}")
-    print("-" * 100)
-    for r in rows:
-        date = f"{r['month']} {r['day']}, {r['year']}"
-        print(f"{r['violation_id']:<15} {r['license_number']:<15} {r['driver_name']:<25} {date:<20} {str(r['total_fine_amount']):<10} {r['ticket_status']:<12}")
-
-def print_all_violations():
-    print("\n-- Incident Violation Tickets Records --")
-    query = """
-    SELECT vt.violation_id, 
-           vt.license_number,
-           CONCAT(d.first_name, ' ', d.last_name) AS driver_name,
-           vtht.violation_type AS violation_name,
-           vt.month, 
-           vt.day, 
-           vt.year,
-           vt.total_fine_amount, 
-           vt.ticket_status
-    FROM violation_ticket vt
-    JOIN driver d ON vt.license_number = d.license_number
-    JOIN violation_ticket_has_type vtht ON vt.violation_id = vtht.violation_id
-    ORDER BY vt.year DESC, vt.month DESC, vt.day DESC
-"""
-    rows = fetch_all(query)
-
-    if not rows:
-        print("[!] No violation records found.")
-        return
-
-    print(f"\n{'Violation ID':<15} {'Violation Type':<20} {'License No.':<15} {'Driver Name':<25} {'Date':<15} {'Fine':<10} {'Status':<10}")
-    print("-" * 115)
+    headers = ["Violation ID", "License No", "Driver", "Date", "Time", "Fine", "Status", "Type", "Officer"]
+    data = []
     for r in rows:
         date_str = f"{r['month']} {r['day']}, {r['year']}"
-        fine_str = f"PHP {r['total_fine_amount']:.2f}"
-        print(f"{r['violation_id']:<15} {r['violation_name']:<20} {r['license_number']:<15} {r['driver_name']:<25} {date_str:<15} {fine_str:<10} {r['ticket_status']:<10}")
+        data.append((
+            r['violation_id'],
+            r['license_number'],
+            r['driver_name'][:20] if len(r['driver_name']) > 20 else r['driver_name'],
+            date_str,
+            r['time'],
+            f"₱{r['total_fine_amount']:,.2f}",
+            r['ticket_status'],
+            r['violation_type'] or "N/A",
+            r['apprehending_officer'][:15] if len(r['apprehending_officer']) > 15 else r['apprehending_officer']
+        ))
+    
+    print_table(headers, data, footer=f"Total violations found: {len(data)}")
+    
+    # Summary statistics
+    total_fines = sum(r['total_fine_amount'] for r in rows)
+    paid_count = sum(1 for r in rows if r['ticket_status'] == 'paid')
+    unpaid_count = sum(1 for r in rows if r['ticket_status'] == 'unpaid')
+    
+    print_divider()
+    print_info(f"📊 Summary: Total fines: ₱{total_fines:,.2f} | Paid: {paid_count} | Unpaid: {unpaid_count}")
+    
+    input("\nPress Enter to continue...")
