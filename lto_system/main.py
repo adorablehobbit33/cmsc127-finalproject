@@ -3,6 +3,7 @@ from menus.vehicle_menu import vehicle_menu
 from menus.registration_menu import registration_menu
 from menus.violation_menu import violation_menu
 from reports.reports_menu import reports_menu
+from reset_db import reset
 
 def main_menu():
     while True:
@@ -15,6 +16,8 @@ def main_menu():
         print("4. Violation Management")
         print("5. Reports")
         print("0. Exit")
+        print("")
+        print("TYPE 'reset database' to reset to the dummy variables")
         print("========================================")
 
         choice = input("Enter choice: ").strip()
@@ -29,6 +32,8 @@ def main_menu():
             violation_menu()
         elif choice == "5":
             reports_menu()
+        elif choice == "reset database":
+            reset()
         elif choice == "0":
             print("\nGoodbye!\n")
             break
