@@ -95,6 +95,10 @@ CREATE TABLE vehicle_registration (
         ON DELETE SET NULL
 );
 
+ALTER TABLE violation_ticket
+  ADD CONSTRAINT fk_vt_plate
+  FOREIGN KEY (plate_number) REFERENCES vehicle(plate_number)
+  ON DELETE SET NULL;
 -- ────────────────────────────────────────────────────────────
 --  VIEWS
 -- ────────────────────────────────────────────────────────────
