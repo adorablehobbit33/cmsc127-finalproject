@@ -88,7 +88,7 @@ def add_driver():
                 age -= 1
 
            
-            if dob_date > current_date:
+            if dob_date >= current_date:
                 print("[!] Error: Date of birth cannot be in the future.")
             elif age < 16:
                 print(f"[!] Error: Driver must be at least 16 years old. (Entered age: {age})")
@@ -132,6 +132,7 @@ def add_driver():
             print("[!] Error: Invalid status selection.")
         else:
             break
+
     query = """
         INSERT INTO driver (license_number, first_name, middle_name, last_name,
             date_of_birth, sex, address, license_type, license_status)

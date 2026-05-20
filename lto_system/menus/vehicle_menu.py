@@ -29,17 +29,113 @@ def vehicle_menu():
 
 def add_vehicle():
     print("\n-- Add Vehicle --")
-    plate_number = input("Plate Number (e.g. ABC1234): ").strip()
-    chassis_number = input("Chassis Number: ").strip()
-    engine_number = input("Engine Number: ").strip()
-    registration_number = input("Registration Number: ").strip()
-    color = input("Color: ").strip()
-    make = input("Make (e.g. Toyota): ").strip()
-    model = input("Model (e.g. Vios): ").strip()
-    year = input("Year (e.g. 2020): ").strip()
-    vehicle_type = input("Vehicle Type (motorcycle/private car/public utility vehicle): ").strip()
-    ownership = input("Ownership (e.g. name or license number): ").strip()
-    license_number = input("Owner License Number: ").strip()
+    
+
+    while True:
+        plate_number = input("Plate Number (e.g. ABC1234): ").strip()
+        if len(plate_number) == 0:
+            print("[!] Error: Plate number cannot be empty.")
+        elif len(plate_number) > 7:
+            print(f"[!] Error: Input too long ({len(plate_number)} chars). Max allowed is 7.")
+        else:
+            break
+
+    while True:
+        chassis_number = input("Chassis Number: ").strip()
+        if len(chassis_number) == 0:
+            print("[!] Error: Chassis number cannot be empty.")
+        elif len(chassis_number) > 17:
+            print(f"[!] Error: Input too long ({len(chassis_number)} chars). Max allowed is 17.")
+        else:
+            break
+
+
+    while True:
+        engine_number = input("Engine Number: ").strip()
+        if len(engine_number) == 0:
+            print("[!] Error: Engine number cannot be empty.")
+        elif len(engine_number) > 17:
+            print(f"[!] Error: Input too long ({len(engine_number)} chars). Max allowed is 17.")
+        else:
+            break
+
+    while True:
+        registration_number = input("Registration Number: ").strip()
+        if len(registration_number) == 0:
+            print("[!] Error: Registration number cannot be empty.")
+        elif len(registration_number) > 7:
+            print(f"[!] Error: Input too long ({len(registration_number)} chars). Max allowed is 7.")
+        else:
+            break
+
+   
+    while True:
+        color = input("Color: ").strip()
+        if len(color) == 0:
+            print("[!] Error: Color cannot be empty.")
+        elif len(color) > 50:
+            print(f"[!] Error: Input too long ({len(color)} chars). Max allowed is 50.")
+        else:
+            break
+
+   
+    while True:
+        make = input("Make (e.g. Toyota): ").strip()
+        if len(make) == 0:
+            print("[!] Error: Make cannot be empty.")
+        elif len(make) > 50:
+            print(f"[!] Error: Input too long ({len(make)} chars). Max allowed is 50.")
+        else:
+            break
+
+   
+    while True:
+        model = input("Model (e.g. Vios): ").strip()
+        if len(model) == 0:
+            print("[!] Error: Model cannot be empty.")
+        elif len(model) > 50:
+            print(f"[!] Error: Input too long ({len(model)} chars). Max allowed is 50.")
+        else:
+            break
+
+    while True:
+        year_input = input("Year (e.g. 2020): ").strip()
+        if len(year_input) == 0:
+            print("[!] Error: Year cannot be empty.")
+            continue
+        try:
+            year = int(year_input)
+            if year < 1900 or year > 2026: # Closes future anomaly edge case entries
+                print("[!] Error: Please enter a realistic automobile manufacturing year (1900-2026).")
+            else:
+                break
+        except ValueError:
+            print("[!] Error: Year must be a valid numerical integer.")
+
+    # 9. Vehicle Type Validation (Strictly capped below your VARCHAR(10) table constraint!)
+    allowed_types = ["motorcycle", "private", "public"]
+    while True:
+        vehicle_type = input("Vehicle Type (motorcycle/private/public): ").strip().lower()
+        if len(vehicle_type) == 0:
+            print("[!] Error: Vehicle type cannot be empty.")
+        elif vehicle_type not in allowed_types:
+            print(f"[!] Error: Choice must be exactly one of: {', '.join(allowed_types)}")
+        else:
+            break
+
+    while True:
+        ownership = input("Ownership Name (leave blank if none): ").strip() or None
+        if ownership and len(ownership) > 50:
+            print(f"[!] Error: Name string too long ({len(ownership)} chars). Max allowed is 50.")
+        else:
+            break
+
+    while True:
+        license_number = input("Owner License Number (leave blank if none): ").strip() or None
+        if license_number and len(license_number) > 13:
+            print(f"[!] Error: License input too long ({len(license_number)} chars). Max allowed is 13.")
+        else:
+            break
 
     query = """
         INSERT INTO vehicle (plate_number, chassis_number, engine_number, registration_number,
@@ -56,9 +152,18 @@ def add_vehicle():
     else:
         print(f"[✗] Failed: {msg}")
 
+
 def update_vehicle():
     print("\n-- Update Vehicle --")
-    plate_number = input("Enter Plate Number of vehicle to update: ").strip()
+    while True:
+        plate_number = input("Plate Number (e.g. ABC1234): ").strip()
+        if len(plate_number) == 0:
+            print("[!] Error: Plate number cannot be empty.")
+        elif len(plate_number) > 7:
+            print(f"[!] Error: Input too long ({len(plate_number)} chars). Max allowed is 7.")
+        else:
+            break
+
 
     rows = fetch_all("SELECT * FROM vehicle WHERE plate_number = %s", (plate_number,))
     if not rows:
@@ -87,7 +192,14 @@ def update_vehicle():
 
 def delete_vehicle():
     print("\n-- Delete Vehicle --")
-    plate_number = input("Enter Plate Number of vehicle to delete: ").strip()
+    while True:
+        plate_number = input("Enter plate number to delete(e.g. ABC1234): ").strip()
+        if len(plate_number) == 0:
+            print("[!] Error: Plate number cannot be empty.")
+        elif len(plate_number) > 7:
+            print(f"[!] Error: Input too long ({len(plate_number)} chars). Max allowed is 7.")
+        else:
+            break
 
     rows = fetch_all("SELECT * FROM vehicle WHERE plate_number = %s", (plate_number,))
     if not rows:
@@ -108,7 +220,12 @@ def delete_vehicle():
 
 def search_vehicle():
     print("\n-- Search Vehicle --")
-    keyword = input("Enter plate number, make, or model to search: ").strip()
+    while True:
+        keyword = input("Enter plate number, make, or model to search: ").strip()
+        if not keyword:
+            print("[!] Error: Search field cannot be empty.")
+            continue
+        break
     like = f"%{keyword}%"
 
     query = """

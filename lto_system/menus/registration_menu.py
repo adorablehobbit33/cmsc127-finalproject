@@ -87,7 +87,7 @@ def add_registration():
         plate_number = input("Plate Number: ").strip()
         if len(plate_number) == 0:
             print("[!] Error: Plate number cannot be empty.")
-        if plate_number and len(plate_number) > 7:
+        elif plate_number and len(plate_number) > 7:
             print(f"[!] Error: Input too long ({len(plate_number)} chars). Max allowed is 7.")
         else:
             break
@@ -110,7 +110,11 @@ def add_registration():
             print(f"[!] Error: Input too long ({len(engine_number)} chars). Max allowed is 17.")
         else:
             break
-
+    rows = fetch_all("SELECT license_status FROM driver WHERE license_number=%s",(license_number,))
+    if not rows:
+        print("[!] Driver not found."); return
+    if rows[0]['license_status'] in ('suspended','expired','revoked'):
+        print(f"[!] Cannot register: driver license is {rows[0]['license_status']}."); return
     # Parse date parts from registration_date
     parts = registration_date.split("-")
     year = parts[0]
@@ -186,6 +190,7 @@ def delete_registration():
             print(f"[!] Error: Input too long ({len(registration_number)} chars). Max allowed is 7.")
         else:
             break
+
     rows = fetch_all("SELECT * FROM vehicle_registration WHERE registration_number = %s", (registration_number,))
     if not rows:
         print("[!] Registration not found.")
@@ -205,7 +210,13 @@ def delete_registration():
 
 def search_registration():
     print("\n-- Search Registration --")
-    keyword = input("Enter registration number or plate number to search: ").strip()
+    while True:
+        keyword = input("Enter registration number or plate number to search: ").strip()
+        if not keyword:
+            print("[!] Error: Search field keyword selection cannot be empty.")
+            continue
+        break
+
     like = f"%{keyword}%"
 
     query = """
