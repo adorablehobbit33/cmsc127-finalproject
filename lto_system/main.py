@@ -1,26 +1,37 @@
+from colorama import init, Fore, Style
 from menus.driver_menu import driver_menu
 from menus.vehicle_menu import vehicle_menu
 from menus.registration_menu import registration_menu
 from menus.violation_menu import violation_menu
 from reports.reports_menu import reports_menu
 from reset_db import reset
+from utils.design import clear_screen, print_success, print_error, print_warning
+
+# Initialize colorama for Windows support
+init(autoreset=True)
+
+def print_banner():
+    """Display the main menu banner"""
+    clear_screen()
+    print(Fore.CYAN + "╔" + "═" * 58 + "╗")
+    print(Fore.CYAN + "║" + Fore.YELLOW + Style.BRIGHT + "🏛️  LTO INFORMATION MANAGEMENT SYSTEM".center(58) + Fore.CYAN + "║")
+    print(Fore.CYAN + "╠" + "═" * 58 + "╣")
+    print(Fore.CYAN + "║" + Fore.WHITE + " 1. Driver Management".ljust(58) + Fore.CYAN + "║")
+    print(Fore.CYAN + "║" + Fore.WHITE + " 2. Vehicle Management".ljust(58) + Fore.CYAN + "║")
+    print(Fore.CYAN + "║" + Fore.WHITE + " 3. Registration Management".ljust(58) + Fore.CYAN + "║")
+    print(Fore.CYAN + "║" + Fore.WHITE + " 4. Violation Management".ljust(58) + Fore.CYAN + "║")
+    print(Fore.CYAN + "║" + Fore.WHITE + " 5. Reports".ljust(58) + Fore.CYAN + "║")
+    print(Fore.CYAN + "║" + Fore.WHITE + " 0. Exit".ljust(58) + Fore.CYAN + "║")
+    print(Fore.CYAN + "╠" + "═" * 58 + "╣")
+    print(Fore.CYAN + "║" + Fore.MAGENTA + " Type 'reset database' to restore original data".ljust(58) + Fore.CYAN + "║")
+    print(Fore.CYAN + "╚" + "═" * 58 + "╝")
+    print()
 
 def main_menu():
     while True:
-        print("\n========================================")
-        print("   LTO Information Management System")
-        print("========================================")
-        print("1. Driver Management")
-        print("2. Vehicle Management")
-        print("3. Registration Management")
-        print("4. Violation Management")
-        print("5. Reports")
-        print("0. Exit")
-        print("")
-        print("TYPE 'reset database' to reset to the dummy variables")
-        print("========================================")
-
-        choice = input("Enter choice: ").strip()
+        print_banner()
+        
+        choice = input(f"{Fore.YELLOW}Enter choice:{Style.RESET_ALL} ").strip().lower()
 
         if choice == "1":
             driver_menu()
@@ -33,12 +44,19 @@ def main_menu():
         elif choice == "5":
             reports_menu()
         elif choice == "reset database":
+            print()
             reset()
+            input(f"{Fore.CYAN}\nPress Enter to continue...{Style.RESET_ALL}")
         elif choice == "0":
-            print("\nGoodbye!\n")
+            clear_screen()
+            print(Fore.CYAN + "╔" + "═" * 58 + "╗")
+            print(Fore.CYAN + "║" + Fore.GREEN + "👋 Thank you for using LTO System!".center(58) + Fore.CYAN + "║")
+            print(Fore.CYAN + "╚" + "═" * 58 + "╝")
+            print()
             break
         else:
-            print("[!] Invalid choice. Please try again.")
+            print_error("Invalid choice. Please try again.")
+            input(f"{Fore.CYAN}\nPress Enter to continue...{Style.RESET_ALL}")
 
 if __name__ == "__main__":
     main_menu()
