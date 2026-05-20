@@ -1,16 +1,25 @@
+from colorama import Fore, Style
 from db import execute_query, fetch_all
+from utils.design import (
+    print_header, print_success, print_error, print_info, print_warning,
+    print_table, print_divider, print_subheader, input_required,
+    input_option, input_date, input_license_number, input_plate_number
+)
 
 def vehicle_menu():
     while True:
-        print("\n--- Vehicle Management ---")
-        print("1. Add Vehicle")
-        print("2. Update Vehicle")
-        print("3. Delete Vehicle")
-        print("4. Search Vehicle")
-        print("5. Print All Vehicles")
-        print("0. Back")
-
-        choice = input("Enter choice: ").strip()
+        print_header("VEHICLE MANAGEMENT")
+        print(Fore.WHITE + """
+  ┌────────────────────────────────────────────────────┐
+  │  1. Add Vehicle                                    │
+  │  2. Update Vehicle                                 │
+  │  3. Delete Vehicle                                 │
+  │  4. Search Vehicle                                 │
+  │  0. Back to Main Menu                              │
+  └────────────────────────────────────────────────────┘
+        """)
+        
+        choice = input(f"{Fore.YELLOW}Enter choice:{Style.RESET_ALL} ").strip()
 
         if choice == "1":
             add_vehicle()
@@ -20,122 +29,50 @@ def vehicle_menu():
             delete_vehicle()
         elif choice == "4":
             search_vehicle()
-        elif choice == "5":
-            print_all_vehicles()
         elif choice == "0":
             break
         else:
-            print("[!] Invalid choice.")
+            print_error("Invalid choice.")
+            input("Press Enter to continue...")
 
 def add_vehicle():
-    print("\n-- Add Vehicle --")
+    print_subheader("ADD NEW VEHICLE")
     
-
+    plate_number = input_plate_number()
+    
+    # Check if plate number already exists
+    existing = fetch_all("SELECT plate_number FROM vehicle WHERE plate_number = %s", (plate_number,))
+    if existing:
+        print_error(f"Plate number {plate_number} already exists!")
+        input("Press Enter to continue...")
+        return
+    
+    chassis_number = input_required("Chassis Number: ", "Chassis number")
+    engine_number = input_required("Engine Number: ", "Engine number")
+    registration_number = input_required("Registration Number: ", "Registration number")
+    color = input_required("Color: ", "Color")
+    make = input_required("Make (e.g. Toyota, Honda, Mitsubishi): ", "Make")
+    model = input_required("Model (e.g. Vios, Civic, Mirage): ", "Model")
+    
+    # Year validation
     while True:
-        plate_number = input("Plate Number (e.g. ABC1234): ").strip()
-        if len(plate_number) == 0:
-            print("[!] Error: Plate number cannot be empty.")
-        elif len(plate_number) > 7:
-            print(f"[!] Error: Input too long ({len(plate_number)} chars). Max allowed is 7.")
-        else:
+        year = input(f"{Fore.CYAN}Year (e.g. 2020):{Style.RESET_ALL} ").strip()
+        if year and year.isdigit() and 1900 <= int(year) <= 2025:
             break
-
-    while True:
-        chassis_number = input("Chassis Number: ").strip()
-        if len(chassis_number) == 0:
-            print("[!] Error: Chassis number cannot be empty.")
-        elif len(chassis_number) > 17:
-            print(f"[!] Error: Input too long ({len(chassis_number)} chars). Max allowed is 17.")
-        else:
-            break
-
-
-    while True:
-        engine_number = input("Engine Number: ").strip()
-        if len(engine_number) == 0:
-            print("[!] Error: Engine number cannot be empty.")
-        elif len(engine_number) > 17:
-            print(f"[!] Error: Input too long ({len(engine_number)} chars). Max allowed is 17.")
-        else:
-            break
-
-    while True:
-        registration_number = input("Registration Number: ").strip()
-        if len(registration_number) == 0:
-            print("[!] Error: Registration number cannot be empty.")
-        elif len(registration_number) > 7:
-            print(f"[!] Error: Input too long ({len(registration_number)} chars). Max allowed is 7.")
-        else:
-            break
-
-   
-    while True:
-        color = input("Color: ").strip()
-        if len(color) == 0:
-            print("[!] Error: Color cannot be empty.")
-        elif len(color) > 50:
-            print(f"[!] Error: Input too long ({len(color)} chars). Max allowed is 50.")
-        else:
-            break
-
-   
-    while True:
-        make = input("Make (e.g. Toyota): ").strip()
-        if len(make) == 0:
-            print("[!] Error: Make cannot be empty.")
-        elif len(make) > 50:
-            print(f"[!] Error: Input too long ({len(make)} chars). Max allowed is 50.")
-        else:
-            break
-
-   
-    while True:
-        model = input("Model (e.g. Vios): ").strip()
-        if len(model) == 0:
-            print("[!] Error: Model cannot be empty.")
-        elif len(model) > 50:
-            print(f"[!] Error: Input too long ({len(model)} chars). Max allowed is 50.")
-        else:
-            break
-
-    while True:
-        year_input = input("Year (e.g. 2020): ").strip()
-        if len(year_input) == 0:
-            print("[!] Error: Year cannot be empty.")
-            continue
-        try:
-            year = int(year_input)
-            if year < 1900 or year > 2026: # Closes future anomaly edge case entries
-                print("[!] Error: Please enter a realistic automobile manufacturing year (1900-2026).")
-            else:
-                break
-        except ValueError:
-            print("[!] Error: Year must be a valid numerical integer.")
-
-    # 9. Vehicle Type Validation (Strictly capped below your VARCHAR(10) table constraint!)
-    allowed_types = ["motorcycle", "private", "public"]
-    while True:
-        vehicle_type = input("Vehicle Type (motorcycle/private/public): ").strip().lower()
-        if len(vehicle_type) == 0:
-            print("[!] Error: Vehicle type cannot be empty.")
-        elif vehicle_type not in allowed_types:
-            print(f"[!] Error: Choice must be exactly one of: {', '.join(allowed_types)}")
-        else:
-            break
-
-    while True:
-        ownership = input("Ownership Name (leave blank if none): ").strip() or None
-        if ownership and len(ownership) > 50:
-            print(f"[!] Error: Name string too long ({len(ownership)} chars). Max allowed is 50.")
-        else:
-            break
-
-    while True:
-        license_number = input("Owner License Number (leave blank if none): ").strip() or None
-        if license_number and len(license_number) > 13:
-            print(f"[!] Error: License input too long ({len(license_number)} chars). Max allowed is 13.")
-        else:
-            break
+        print_error("Please enter a valid year (1900-2025)")
+    
+    vehicle_type = input_option("Vehicle Type:", ["motorcycle", "private car", "public utility vehicle"])
+    ownership = input_required("Ownership (e.g. Owned, Financed, Leased): ", "Ownership")
+    
+    # Verify owner exists
+    print_info("Make sure the driver exists before adding")
+    license_number = input_license_number()
+    
+    owner_check = fetch_all("SELECT * FROM driver WHERE license_number = %s", (license_number,))
+    if not owner_check:
+        print_error(f"Driver with license number {license_number} does not exist. Add driver first.")
+        input("Press Enter to continue...")
+        return
 
     query = """
         INSERT INTO vehicle (plate_number, chassis_number, engine_number, registration_number,
@@ -148,63 +85,29 @@ def add_vehicle():
     ))
 
     if success:
-        print("[✓] Vehicle added successfully.")
+        print_success(f"Vehicle {make} {model} ({plate_number}) added successfully!")
     else:
-        print(f"[✗] Failed: {msg}")
-
+        print_error(f"Failed: {msg}")
+    
+    input("\nPress Enter to continue...")
 
 def update_vehicle():
-    print("\n-- Update Vehicle --")
-    while True:
-        plate_number = input("Plate Number (e.g. ABC1234): ").strip()
-        if len(plate_number) == 0:
-            print("[!] Error: Plate number cannot be empty.")
-        elif len(plate_number) > 7:
-            print(f"[!] Error: Input too long ({len(plate_number)} chars). Max allowed is 7.")
-        else:
-            break
-
+    print_subheader("UPDATE VEHICLE")
+    plate_number = input_plate_number()
 
     rows = fetch_all("SELECT * FROM vehicle WHERE plate_number = %s", (plate_number,))
     if not rows:
-        print("[!] Vehicle not found.")
+        print_error("Vehicle not found.")
+        input("Press Enter to continue...")
         return
 
     v = rows[0]
-    print(f"\nCurrent info: {v['make']} {v['model']} {v['year']} | {v['color']} | {v['vehicle_type']}")
-    print("(Press Enter to keep current value)\n")
+    print_info(f"Current info: {v['make']} {v['model']} {v['year']} | {v['color']} | {v['vehicle_type']}")
+    print_info("(Press Enter to keep current value)\n")
 
-    while True:
-        color_input = input(f"Color [{v['color']}]: ").strip()
-        color = color_input if color_input else v['color']
-        if len(color) == 0:
-            print("[!] Error: Color cannot be left completely empty.")
-        elif len(color) > 50:
-            print(f"[!] Error: Color input too long ({len(color)} chars). Max allowed is 50.")
-        else:
-            break
-
-    allowed_types = ["motorcycle", "private", "public"]
-    while True:
-        type_input = input(f"Vehicle Type [{v['vehicle_type']}]: ").strip().lower()
-        vehicle_type = type_input if type_input else v['vehicle_type']
-        if vehicle_type not in allowed_types:
-            print(f"[!] Error: Choice must be exactly one of: {', '.join(allowed_types)}")
-        else:
-            break
-        
-    while True:
-        ownership_input = input(f"Ownership [{v['ownership'] if v['ownership'] else 'None'}]: ").strip()
-        
-        if ownership_input.lower() == "none":
-            ownership = None
-            break
-
-        ownership = ownership_input if ownership_input else v['ownership']
-        if ownership and len(ownership) > 50:
-            print(f"[!] Error: Ownership string too long ({len(ownership)} chars). Max allowed is 50.")
-        else:
-            break
+    color = input(f"{Fore.CYAN}Color [{v['color']}]:{Style.RESET_ALL} ").strip() or v['color']
+    vehicle_type = input(f"{Fore.CYAN}Vehicle Type [{v['vehicle_type']}]:{Style.RESET_ALL} ").strip() or v['vehicle_type']
+    ownership = input(f"{Fore.CYAN}Ownership [{v['ownership']}]:{Style.RESET_ALL} ").strip() or v['ownership']
 
     query = """
         UPDATE vehicle
@@ -214,86 +117,88 @@ def update_vehicle():
     success, msg = execute_query(query, (color, vehicle_type, ownership, plate_number))
 
     if success:
-        print("[✓] Vehicle updated successfully.")
+        print_success("Vehicle updated successfully.")
     else:
-        print(f"[✗] Failed: {msg}")
+        print_error(f"Failed: {msg}")
+    
+    input("\nPress Enter to continue...")
 
 def delete_vehicle():
-    print("\n-- Delete Vehicle --")
-    while True:
-        plate_number = input("Enter plate number to delete(e.g. ABC1234): ").strip()
-        if len(plate_number) == 0:
-            print("[!] Error: Plate number cannot be empty.")
-        elif len(plate_number) > 7:
-            print(f"[!] Error: Input too long ({len(plate_number)} chars). Max allowed is 7.")
-        else:
-            break
+    print_subheader("DELETE VEHICLE")
+    plate_number = input_plate_number()
 
     rows = fetch_all("SELECT * FROM vehicle WHERE plate_number = %s", (plate_number,))
     if not rows:
-        print("[!] Vehicle not found.")
+        print_error("Vehicle not found.")
+        input("Press Enter to continue...")
         return
 
     v = rows[0]
-    confirm = input(f"Delete {v['make']} {v['model']} ({v['plate_number']})? (yes/no): ").strip().lower()
-    if confirm != "yes":
-        print("[!] Cancelled.")
+    print_warning(f"⚠️  You are about to delete: {v['make']} {v['model']} ({plate_number})")
+    
+    # Check if vehicle has violations
+    violations = fetch_all("SELECT COUNT(*) as count FROM violation_ticket WHERE plate_number = %s", (plate_number,))
+    if violations and violations[0]['count'] > 0:
+        print_error(f"Cannot delete - vehicle has {violations[0]['count']} violation record(s).")
+        input("Press Enter to continue...")
+        return
+    
+    confirm = input(f"{Fore.RED}Type 'DELETE' to confirm:{Style.RESET_ALL} ").strip()
+    if confirm != "DELETE":
+        print_warning("Cancelled.")
+        input("Press Enter to continue...")
         return
 
     success, msg = execute_query("DELETE FROM vehicle WHERE plate_number = %s", (plate_number,))
     if success:
-        print("[✓] Vehicle deleted successfully.")
+        print_success("Vehicle deleted successfully.")
     else:
-        print(f"[✗] Failed: {msg}")
+        print_error(f"Failed: {msg}")
+    
+    input("\nPress Enter to continue...")
 
 def search_vehicle():
-    print("\n-- Search Vehicle --")
-    while True:
-        keyword = input("Enter plate number, make, or model to search: ").strip()
-        if not keyword:
-            print("[!] Error: Search field cannot be empty.")
-            continue
-        break
+    print_subheader("SEARCH VEHICLE")
+    print_info("Search by plate number, make, or model (partial matches allowed)")
+    
+    keyword = input(f"{Fore.CYAN}Enter plate number, make, or model to search:{Style.RESET_ALL} ").strip()
+    
+    if not keyword:
+        print_warning("Please enter a search term")
+        input("Press Enter to continue...")
+        return
+    
     like = f"%{keyword}%"
 
     query = """
         SELECT v.plate_number, v.make, v.model, v.year, v.color, v.vehicle_type,
-               COALESCE(CONCAT(d.first_name,' ',d.last_name), 'Unassigned') AS owner_name
+               CONCAT(d.first_name, ' ', d.last_name) AS owner_name
         FROM vehicle v
-        LEFT JOIN driver d ON v.license_number = d.license_number
+        JOIN driver d ON v.license_number = d.license_number
         WHERE v.plate_number LIKE %s
            OR v.make LIKE %s
            OR v.model LIKE %s
+        ORDER BY v.plate_number
     """
     rows = fetch_all(query, (like, like, like))
 
     if not rows:
-        print("[!] No vehicles found.")
+        print_warning(f"No vehicles found matching '{keyword}'")
+        input("Press Enter to continue...")
         return
 
-    print(f"\n{'Plate No.':<10} {'Make':<12} {'Model':<12} {'Year':<6} {'Color':<12} {'Type':<20} {'Owner':<25}")
-    print("-" * 100)
+    headers = ["Plate No", "Make", "Model", "Year", "Color", "Type", "Owner"]
+    data = []
     for r in rows:
-        print(f"{r['plate_number']:<10} {r['make']:<12} {r['model']:<12} {str(r['year']):<6} {r['color']:<12} {r['vehicle_type']:<20} {r['owner_name']:<25}")
+        data.append((
+            r['plate_number'],
+            r['make'],
+            r['model'],
+            r['year'],
+            r['color'],
+            r['vehicle_type'],
+            r['owner_name']
+        ))
     
-def print_all_vehicles():
-    print("\n-- All Registered Vehicles --")
-    query = """
-        SELECT v.plate_number, v.make, v.model, v.year, v.color, v.vehicle_type,
-            CONCAT(d.first_name, ' ', d.last_name) AS owner_name
-        FROM vehicle v
-        LEFT JOIN driver d ON v.license_number = d.license_number
-        ORDER BY v.plate_number
-    """
-    rows = fetch_all(query)
-
-    if not rows:
-        print("[!] No vehicles registered in the system.")
-        return
-
-    print(f"\n{'Plate No.':<12} {'Make/Model':<20} {'Year':<6} {'Color':<10} {'Type':<15} {'Owner':<20}")
-    print("-" * 100)
-    for r in rows:
-        make_model = f"{r['make']} {r['model']}"
-        owner = r['owner_name'] if r['owner_name'] else "Unassigned"
-        print(f"{r['plate_number']:<12} {make_model:<20} {r['year']:<6} {r['color']:<10} {r['vehicle_type']:<15} {owner:<20}")
+    print_table(headers, data, footer=f"Total vehicles found: {len(data)}")
+    input("\nPress Enter to continue...")

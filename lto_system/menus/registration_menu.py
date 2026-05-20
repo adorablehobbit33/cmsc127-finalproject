@@ -1,18 +1,25 @@
-from datetime import datetime
-
+from colorama import Fore, Style
 from db import execute_query, fetch_all
+from utils.design import (
+    print_header, print_success, print_error, print_info, print_warning,
+    print_table, print_divider, print_subheader, input_required,
+    input_option, input_date, input_license_number, input_plate_number
+)
 
 def registration_menu():
     while True:
-        print("\n--- Registration Management ---")
-        print("1. Add Registration")
-        print("2. Update Registration")
-        print("3. Delete Registration")
-        print("4. Search Registration")
-        print("5. Print All Registrations")
-        print("0. Back")
-
-        choice = input("Enter choice: ").strip()
+        print_header("REGISTRATION MANAGEMENT")
+        print(Fore.WHITE + """
+  ┌────────────────────────────────────────────────────┐
+  │  1. Add Registration                               │
+  │  2. Update Registration                            │
+  │  3. Delete Registration                            │
+  │  4. Search Registration                            │
+  │  0. Back to Main Menu                              │
+  └────────────────────────────────────────────────────┘
+        """)
+        
+        choice = input(f"{Fore.YELLOW}Enter choice:{Style.RESET_ALL} ").strip()
 
         if choice == "1":
             add_registration()
@@ -22,107 +29,63 @@ def registration_menu():
             delete_registration()
         elif choice == "4":
             search_registration()
-        elif choice == "5":
-            print_all_registrations()
         elif choice == "0":
             break
         else:
-            print("[!] Invalid choice.")
+            print_error("Invalid choice.")
+            input("Press Enter to continue...")
 
 def add_registration():
-    print("\n-- Add Registration --")
-    while True:
-        registration_number = input("Registration Number: ").strip()
-        if len(registration_number) == 0:
-            print("[!] Error: Registration number cannot be empty.")
-        elif len(registration_number) > 7:
-            print(f"[!] Error: Input too long ({len(registration_number)} chars). Max allowed is 7.")
-        else:
-            break
-
-        
-    while True:
-        registration_date = input("Registration Date (YYYY-MM-DD): ").strip()
-        
-        if len(registration_date) != 10 or registration_date[4] != '-' or registration_date[7] != '-':
-            print("[!] Error: Invalid format. Please write exactly as YYYY-MM-DD.")
-            continue
-
-        try:
-            # Safely parse string into a true datetime object to evaluate calendars
-            parsed_date = datetime.strptime(registration_date, "%Y-%m-%d")
-            current_date = datetime.now()
-            
-            # Close edge case: Reject future dates
-            if parsed_date > current_date:
-                print("[!] Error: Registration date cannot be in the future.")
-                continue
-
-            break
-            
-        except ValueError:
-            print("[!] Error: That is not a valid date on the calendar. Check your month/day parameters.")
-            continue
-
-    allowed_statuses = ["active", "expired", "suspended"]
-    while True:
-        registration_status = input("Status (active/expired/suspended): ").strip().lower()
-        if len(registration_status) > 20:
-            print("[!] Error: Input status length cannot exceed 20 characters.")
-        elif registration_status not in allowed_statuses:
-            print(f"[!] Error: Invalid choice. Choose exactly from: {', '.join(allowed_statuses)}")
-        else:
-            break
-
-    while True:
-        license_number = input("License Number (e.g. N01-23-456789): ").strip()
-        if len(license_number) == 0:
-            print("[!] Error: License number cannot be empty.")
-        elif len(license_number) > 13:
-            print(f"[!] Error: Input too long ({len(license_number)} chars). Max allowed is 13.")
-        else:
-            break
-
-    while True:
-        plate_number = input("Plate Number: ").strip()
-        if len(plate_number) == 0:
-            print("[!] Error: Plate number cannot be empty.")
-        elif plate_number and len(plate_number) > 7:
-            print(f"[!] Error: Input too long ({len(plate_number)} chars). Max allowed is 7.")
-        else:
-            break
-
-
-    while True:
-        chassis_number = input("Chassis Number: ").strip()
-        if len(chassis_number) == 0:
-            print("[!] Error: Chassis number cannot be empty.")
-        elif len(chassis_number) > 17:
-            print(f"[!] Error: Input too long ({len(chassis_number)} chars). Max allowed is 17.")
-        else:
-            break
-
-    while True:
-        engine_number = input("Engine Number: ").strip()
-        if len(engine_number) == 0:
-            print("[!] Error: Engine number cannot be empty.")
-        elif len(engine_number) > 17:
-            print(f"[!] Error: Input too long ({len(engine_number)} chars). Max allowed is 17.")
-        else:
-            break
-    rows = fetch_all("SELECT license_status FROM driver WHERE license_number=%s",(license_number,))
-    if not rows:
-        print("[!] Driver not found."); return
-    if rows[0]['license_status'] in ('suspended','expired','revoked'):
-        print(f"[!] Cannot register: driver license is {rows[0]['license_status']}."); return
+    print_subheader("ADD NEW REGISTRATION")
+    
+    registration_number = input_required("Registration Number: ", "Registration number")
+    
+    # Check if registration already exists
+    existing = fetch_all("SELECT registration_number FROM vehicle_registration WHERE registration_number = %s", (registration_number,))
+    if existing:
+        print_error(f"Registration number {registration_number} already exists!")
+        input("Press Enter to continue...")
+        return
+    
+    registration_date = input_date("Registration Date (YYYY-MM-DD): ")
+    
     # Parse date parts from registration_date
     parts = registration_date.split("-")
     year = parts[0]
     month_num = int(parts[1])
     day = parts[2]
-    months = ["January","February","March","April","May","June",
-              "July","August","September","October","November","December"]
+    months = ["January", "February", "March", "April", "May", "June",
+              "July", "August", "September", "October", "November", "December"]
     month = months[month_num - 1]
+    
+    # Calculate expiration date for display
+    from datetime import datetime, timedelta
+    reg_date_obj = datetime.strptime(registration_date, "%Y-%m-%d")
+    exp_date = reg_date_obj + timedelta(days=365)
+    print_info(f"Expiration date will be: {exp_date.strftime('%Y-%m-%d')}")
+    
+    registration_status = input_option("Registration Status:", ["active", "expired", "suspended"])
+    
+    # Verify driver exists
+    print_info("Verifying driver...")
+    license_number = input_license_number()
+    driver_check = fetch_all("SELECT * FROM driver WHERE license_number = %s", (license_number,))
+    if not driver_check:
+        print_error(f"Driver with license number {license_number} does not exist. Add driver first.")
+        input("Press Enter to continue...")
+        return
+    
+    # Verify vehicle exists
+    print_info("Verifying vehicle...")
+    plate_number = input_plate_number()
+    vehicle_check = fetch_all("SELECT * FROM vehicle WHERE plate_number = %s", (plate_number,))
+    if not vehicle_check:
+        print_error(f"Vehicle with plate number {plate_number} does not exist. Add vehicle first.")
+        input("Press Enter to continue...")
+        return
+    
+    chassis_number = input_required("Chassis Number: ", "Chassis number")
+    engine_number = input_required("Engine Number: ", "Engine number")
 
     query = """
         INSERT INTO vehicle_registration (registration_number, registration_date,
@@ -136,124 +99,127 @@ def add_registration():
     ))
 
     if success:
-        print("[✓] Registration added successfully.")
+        print_success(f"Registration {registration_number} added successfully!")
+        print_info(f"Vehicle {plate_number} registered to {driver_check[0]['first_name']} {driver_check[0]['last_name']}")
     else:
-        print(f"[✗] Failed: {msg}")
+        print_error(f"Failed: {msg}")
+    
+    input("\nPress Enter to continue...")
 
 def update_registration():
-    print("\n-- Update Registration --")
-    while True:
-        registration_number = input("Enter Registration Number to update: ").strip()
-        if len(registration_number) == 0:
-            print("[!] Error: Registration number cannot be empty.")
-        elif len(registration_number) > 7:
-            print(f"[!] Error: Input too long ({len(registration_number)} chars). Max allowed is 7.")
-        else:
-            break
+    print_subheader("UPDATE REGISTRATION")
+    registration_number = input_required("Registration Number to update: ", "Registration number")
 
     rows = fetch_all("SELECT * FROM vehicle_registration WHERE registration_number = %s", (registration_number,))
     if not rows:
-        print("[!] Registration not found.")
+        print_error("Registration not found.")
+        input("Press Enter to continue...")
         return
 
     r = rows[0]
-    print(f"\nCurrent info: {r['plate_number']} | {r['registration_status']} | {r['registration_date']}")
-    print("(Press Enter to keep current value)\n")
+    print_info(f"Current info: Plate: {r['plate_number']} | Status: {r['registration_status']} | Date: {r['registration_date']}")
+    print_info("(Press Enter to keep current value)\n")
 
-
-    while True:
-        registration_input = input(f"Status [{r['registration_status']}]: ").strip() 
-        registration_status = registration_input if registration_input else r['registration_status']
-
-        if registration_status and len(registration_status) > 20:
-            print("[!] Error: Input status length cannot exceed 20 characters.")
-        elif registration_status and registration_status.lower() not in ["active", "expired", "suspended"]:
-            print(f"[!] Error: Invalid choice. Choose exactly from: active, expired, suspended")
-        else:
-            break
+    registration_status = input(f"{Fore.CYAN}Status [{r['registration_status']}]:{Style.RESET_ALL} ").strip() or r['registration_status']
+    
+    # Validate status
+    if registration_status not in ["active", "expired", "suspended"]:
+        print_error("Invalid status. Must be active, expired, or suspended")
+        input("Press Enter to continue...")
+        return
 
     query = "UPDATE vehicle_registration SET registration_status = %s WHERE registration_number = %s"
     success, msg = execute_query(query, (registration_status, registration_number))
 
     if success:
-        print("[✓] Registration updated successfully.")
+        print_success(f"Registration {registration_number} updated to '{registration_status}'")
     else:
-        print(f"[✗] Failed: {msg}")
+        print_error(f"Failed: {msg}")
+    
+    input("\nPress Enter to continue...")
 
 def delete_registration():
-    print("\n-- Delete Registration --")
-    while True:
-        registration_number = input("Enter Registration Number to delete: ").strip()
-        if len(registration_number) == 0:
-            print("[!] Error: Registration number cannot be empty.")
-        elif len(registration_number) > 7:
-            print(f"[!] Error: Input too long ({len(registration_number)} chars). Max allowed is 7.")
-        else:
-            break
+    print_subheader("DELETE REGISTRATION")
+    registration_number = input_required("Registration Number to delete: ", "Registration number")
 
     rows = fetch_all("SELECT * FROM vehicle_registration WHERE registration_number = %s", (registration_number,))
     if not rows:
-        print("[!] Registration not found.")
+        print_error("Registration not found.")
+        input("Press Enter to continue...")
         return
 
     r = rows[0]
-    confirm = input(f"Delete registration {r['registration_number']} for plate {r['plate_number']}? (yes/no): ").strip().lower()
-    if confirm != "yes":
-        print("[!] Cancelled.")
+    print_warning(f"⚠️  You are about to delete registration for plate: {r['plate_number']}")
+    print_info(f"Registration date: {r['registration_date']}")
+    
+    confirm = input(f"{Fore.RED}Type 'DELETE' to confirm:{Style.RESET_ALL} ").strip()
+    if confirm != "DELETE":
+        print_warning("Cancelled.")
+        input("Press Enter to continue...")
         return
 
     success, msg = execute_query("DELETE FROM vehicle_registration WHERE registration_number = %s", (registration_number,))
     if success:
-        print("[✓] Registration deleted successfully.")
+        print_success("Registration deleted successfully.")
     else:
-        print(f"[✗] Failed: {msg}")
+        print_error(f"Failed: {msg}")
+    
+    input("\nPress Enter to continue...")
 
 def search_registration():
-    print("\n-- Search Registration --")
-    while True:
-        keyword = input("Enter registration number or plate number to search: ").strip()
-        if not keyword:
-            print("[!] Error: Search field keyword selection cannot be empty.")
-            continue
-        break
-
+    print_subheader("SEARCH REGISTRATION")
+    print_info("Search by registration number or plate number (partial matches allowed)")
+    
+    keyword = input(f"{Fore.CYAN}Enter registration number or plate number to search:{Style.RESET_ALL} ").strip()
+    
+    if not keyword:
+        print_warning("Please enter a search term")
+        input("Press Enter to continue...")
+        return
+    
     like = f"%{keyword}%"
 
     query = """
         SELECT vr.registration_number, vr.plate_number, vr.registration_date,
                vr.registration_status,
-               DATE_ADD(vr.registration_date, INTERVAL 1 YEAR) AS expiration_date
+               DATE_ADD(vr.registration_date, INTERVAL 1 YEAR) AS expiration_date,
+               CONCAT(d.first_name, ' ', d.last_name) AS owner_name
         FROM vehicle_registration vr
+        JOIN driver d ON vr.license_number = d.license_number
         WHERE vr.registration_number LIKE %s
            OR vr.plate_number LIKE %s
+        ORDER BY vr.registration_date DESC
     """
     rows = fetch_all(query, (like, like))
 
     if not rows:
-        print("[!] No registrations found.")
+        print_warning(f"No registrations found matching '{keyword}'")
+        input("Press Enter to continue...")
         return
 
-    print(f"\n{'Reg No.':<10} {'Plate No.':<12} {'Reg Date':<14} {'Expiry Date':<14} {'Status':<12}")
-    print("-" * 65)
+    headers = ["Reg No", "Plate No", "Reg Date", "Expiry Date", "Status", "Owner"]
+    data = []
     for r in rows:
-        print(f"{r['registration_number']:<10} {r['plate_number']:<12} {str(r['registration_date']):<14} {str(r['expiration_date']):<14} {r['registration_status']:<12}")
-
-def print_all_registrations():
-    print("\n-- All Vehicle Registrations Ledger --")
-    query = """
-        SELECT vr.registration_number, vr.plate_number, vr.registration_date,
-               vr.registration_status,
-               DATE_ADD(vr.registration_date, INTERVAL 1 YEAR) AS expiration_date
-        FROM vehicle_registration vr
-        ORDER BY vr.registration_date DESC
-    """
-    rows = fetch_all(query)
-
-    if not rows:
-        print("[!] No registrations found in the system.")
-        return
-
-    print(f"\n{'Reg No.':<12} {'Plate No.':<12} {'Reg Date':<14} {'Expiry Date':<14} {'Status':<10}")
-    print("-" * 80)
+        data.append((
+            r['registration_number'],
+            r['plate_number'],
+            r['registration_date'],
+            r['expiration_date'],
+            r['registration_status'],
+            r['owner_name']
+        ))
+    
+    print_table(headers, data, footer=f"Total registrations found: {len(data)}")
+    
+    # Show upcoming expirations warning
+    from datetime import datetime
+    today = datetime.now().date()
+    expiring_soon = []
     for r in rows:
-        print(f"{r['registration_number']:<12} {r['plate_number']:<12} {str(r['registration_date']):<14} {str(r['expiration_date']):<14} {r['registration_status']:<10}")
+        if r['expiration_date'] and r['expiration_date'] <= today:
+            expiring_soon.append(r['plate_number'])
+    
+    if expiring_soon:
+        print_warning(f"⚠️  Expired registrations for: {', '.join(expiring_soon)}")
+    
+    input("\nPress Enter to continue...")

@@ -1,9 +1,9 @@
 from colorama import init, Fore, Style
-from menus.driver_menu import driver_menu
-from menus.vehicle_menu import vehicle_menu
-from menus.registration_menu import registration_menu
-from menus.violation_menu import violation_menu
-from reports.reports_menu import reports_menu
+from driver_menu import driver_menu
+from vehicle_menu import vehicle_menu
+from registration_menu import registration_menu
+from violation_menu import violation_menu
+from reports_menu import reports_menu
 from reset_db import reset
 from utils.design import clear_screen, print_success, print_error, print_warning
 

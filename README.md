@@ -46,7 +46,7 @@ MariaDB  (executes SQL, stores data)
 - The following Python libraries:
 
 ```bash
-pip install mysql-connector-python python-dotenv
+pip install mysql-connector-python python-dotenv colorama
 ```
 
 ---
